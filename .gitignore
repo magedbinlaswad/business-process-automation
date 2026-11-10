@@ -1,0 +1,16 @@
+# Private deployment material
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+credentials*.json
+*private*.json
+exports/
+executions/
+local/
+*.pdf
+*.docx
+node_modules/
+.DS_Store

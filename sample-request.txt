@@ -1,0 +1,7 @@
+Link: https://example.com/records/REQ-001
+Record: REQ-001 | Department: Operations | Reference: CASE-001
+
+Link: https://example.com/records/REQ-002
+Record: REQ-002 | Department: Customer Service | Reference: CASE-002
+
+Email: demo@example.com

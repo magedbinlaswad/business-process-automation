@@ -1,0 +1,2649 @@
+{
+  "name": "Business Process Automation — Document Operations",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5213757a-3f2f-4bfd-801a-a58dc3ccd6d0",
+      "name": "Receive Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const update = $input.first().json;\nconst user = update.message?.from ?? update.callback_query?.from;\nconst chat = update.message?.chat ?? update.callback_query?.message?.chat;\nif (!user?.id || !chat?.id || user.is_bot || chat.type !== 'private' || String(user.id) !== String(chat.id)) {\n  throw new Error('Only direct messages from a human user are supported.');\n}\nreturn [{ json: {\n  user_id: String(user.id), chat_id: String(chat.id),\n  username: user.username || '', name: user.first_name || '',\n  action: String(update.callback_query?.data ?? update.message?.text ?? '').trim(),\n  callback_query_id: update.callback_query?.id || '',\n}, pairedItem: { item: 0 } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ],
+      "id": "69a49c62-2246-47d1-9239-8afe3041510f",
+      "name": "Normalize Request"
+    },
+    {
+      "parameters": {
+        "operation": "copy",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.template_key === 'template_a' ? $('Project Configuration').first().json.config.templateAId : $('Project Configuration').first().json.config.templateBId }}",
+          "mode": "id"
+        },
+        "name": "={{ $json.fileName }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3000,
+        700
+      ],
+      "id": "76d387dd-25fa-4f53-998e-d4ef9e8d4a92",
+      "name": "Copy Selected Template",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ String($('Normalize Request').first().json.action ?? '').trim().toLowerCase() }}",
+                    "rightValue": "^(/start|hi)$",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    },
+                    "id": "6fa13758-d374-4a38-b241-93e93ff2e7d9"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Welcome"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "c2f99f00-df99-4a17-a5bc-f6a3c4716066",
+                    "leftValue": "={{ $('Receive Request').first().json.callback_query?.data ?? '' }}",
+                    "rightValue": "start_menu",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Templates"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "90bf017d-2ecd-4590-99dc-9076e34a58e0",
+                    "leftValue": "={{ $('Normalize Request').first().json.action }}",
+                    "rightValue": "template_a",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Template A"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "869c09d2-966d-43c4-970a-de3a5912a0ce",
+                    "leftValue": "={{ $('Normalize Request').first().json.action }}",
+                    "rightValue": "template_b",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Template B"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "edc77bb0-1eb8-4e1b-a07a-8f7f433cb8c7",
+                    "leftValue": "={{ String($('Normalize Request').first().json.action ?? '').toLowerCase() }}",
+                    "rightValue": "^[\\s\\S]+$",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Document Data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.5,
+      "position": [
+        1800,
+        100
+      ],
+      "id": "b5cf8b2c-4aa7-49c5-8a91-d6e787d13ba6",
+      "name": "Route User Action"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $('Project Configuration').first().json.config.accessTableId }}",
+          "mode": "id"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $json.user_id }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        100
+      ],
+      "id": "f3d4a8e2-df07-4e59-975f-c059365d6fb9",
+      "name": "Find Access Record",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "text": "Business Process Automation\n\nYour access is approved. Choose a template to create business documents.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        },
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Start",
+                    "additionalFields": {
+                      "callback_data": "start_menu"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2100,
+        -100
+      ],
+      "id": "73ed2979-281e-4fcf-ba99-8c8ae0cd7386",
+      "name": "Welcome"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "0f44ad40-7c44-4d5a-8b14-39f59df1fe94",
+              "leftValue": "={{ $json.status ?? '' }}",
+              "rightValue": "approved",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1500,
+        100
+      ],
+      "id": "e3355351-9edb-4e6e-afb4-3fa1b8bb0cc4",
+      "name": "Check Approved Access"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "text": "Choose a document template:\nA — Service Confirmation\nB — Internal Request Summary",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        },
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Service Confirmation",
+                    "additionalFields": {
+                      "callback_data": "template_a"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Request Summary",
+                    "additionalFields": {
+                      "callback_data": "template_b"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2100,
+        100
+      ],
+      "id": "57a56dcc-3605-4997-aceb-eebe5294d4c4",
+      "name": "Choose Template"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $('Project Configuration').first().json.config.sessionTableId }}",
+          "mode": "id"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "chat_id",
+              "keyValue": "={{ $('Normalize Request').first().json.chat_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "step": "awaiting_documents",
+            "chat_id": "={{ $('Normalize Request').first().json.chat_id }}",
+            "template_key": "template_a"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "template_key",
+              "displayName": "template_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "step",
+              "displayName": "step",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2400,
+        250
+      ],
+      "id": "c8a36727-b492-43f9-86aa-fce4ca86bd2e",
+      "name": "Save Template A Session"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $('Project Configuration').first().json.config.sessionTableId }}",
+          "mode": "id"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "chat_id",
+              "keyValue": "={{ $('Normalize Request').first().json.chat_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "step": "awaiting_documents",
+            "chat_id": "={{ $('Normalize Request').first().json.chat_id }}",
+            "template_key": "template_b"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "template_key",
+              "displayName": "template_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "step",
+              "displayName": "step",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2400,
+        450
+      ],
+      "id": "708ce0d3-4e18-4106-bd2c-da00fb5cb6b9",
+      "name": "Save Template B Session"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "text": "Send 1–20 records using this format, with one shared contact email on the final line:\n\nLink: https://example.com/records/REQ-001\nRecord: REQ-001 | Department: Operations | Reference: CASE-001\n\nEmail: demo@example.com",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2700,
+        350
+      ],
+      "id": "27b04c9f-a501-4af4-ab0b-efd92824390b",
+      "name": "Request Document Data"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $('Project Configuration').first().json.config.sessionTableId }}",
+          "mode": "id"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "chat_id",
+              "keyValue": "={{ $('Normalize Request').first().json.chat_id }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2100,
+        700
+      ],
+      "id": "ea8bdf7d-7a75-406a-9ada-a6354f1c5262",
+      "name": "Find Session",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "7866153f-d37f-4d39-a46d-e981d075f301",
+              "leftValue": "={{ $json.step ?? '' }}",
+              "rightValue": "awaiting_documents",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "fef477d0-a321-442f-a2a0-9dfde7252105",
+              "leftValue": "={{ $json.template_key ?? '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        2400,
+        700
+      ],
+      "id": "ab50eea6-e64d-4dd0-855a-42636511df60",
+      "name": "Check Session"
+    },
+    {
+      "parameters": {
+        "jsCode": "const session = $input.first().json;\nconst source = $('Normalize Request').first().json;\nconst config = $('Project Configuration').first().json.config;\nconst text = String(source.action || '').trim();\nif (!['template_a', 'template_b'].includes(session.template_key)) throw new Error('Select a template first.');\nconst lines = text.split(/\\r?\\n/).map(line => line.trim()).filter(Boolean);\nconst emailLine = lines.pop() || '';\nconst emailMatch = emailLine.match(/^Email:\\s*([A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,})$/i);\nif (!emailMatch || emailMatch[1].length > 254) throw new Error('End the message with one valid Email line.');\nif (!lines.length || lines.length % 2 !== 0 || lines.length > 40) throw new Error('Provide between 1 and 20 two-line records.');\nconst seen = new Set();\nconst records = [];\nfor (let i = 0; i < lines.length; i += 2) {\n  // Links are embedded in PDFs; they are never fetched by this workflow.\n  const link = lines[i].match(/^Link:\\s*(https:\\/\\/([a-z0-9.-]+)(?:\\/[^\\s<>\"'`\\\\]*)?)$/i);\n  const fields = lines[i + 1].match(/^Record:\\s*([A-Z0-9][A-Z0-9_-]{0,63})\\s*\\|\\s*Department:\\s*([^|\\r\\n]{1,80})\\s*\\|\\s*Reference:\\s*([A-Z0-9][A-Z0-9_-]{0,63})$/i);\n  if (!link || link[1].length > 2048 || !config.allowedLinkHosts.map(host => host.toLowerCase()).includes(link[2].toLowerCase()) || !fields) {\n    throw new Error('Invalid record format or link host.');\n  }\n  const [, record_id, department, reference] = fields;\n  if (!department.trim() || /[<>\\x00-\\x1f]/.test(department) || seen.has(record_id.toLowerCase())) throw new Error('Invalid department or duplicate record ID.');\n  seen.add(record_id.toLowerCase());\n  const fileName = `${record_id} - ${reference}`;\n  records.push({ json: { template_key: session.template_key, url: link[1], record_id, department: department.trim(), reference,\n    email: emailMatch[1], fileName, pdfName: `${fileName}.pdf`, chat_id: source.chat_id }, pairedItem: { item: 0 } });\n}\nreturn records;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2700,
+        700
+      ],
+      "id": "46666381-5f07-453f-99b6-79644f46970f",
+      "name": "Validate Document Batch",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ $json.id }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "replaceAll",
+              "text": "{{Record_ID}}",
+              "replaceText": "={{ $('Validate Document Batch').item.json.record_id }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{Department}}",
+              "replaceText": "={{ $('Validate Document Batch').item.json.department }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{Reference}}",
+              "replaceText": "={{ $('Validate Document Batch').item.json.reference }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "{{EMAIL}}",
+              "replaceText": "={{ $('Validate Document Batch').item.json.email }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        3300,
+        700
+      ],
+      "id": "f2564c6e-b597-4cd3-8224-6f8655f984f6",
+      "name": "Fill Document Fields"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "={{ $('Copy Selected Template').item.json.id }}",
+        "simple": false
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        700
+      ],
+      "id": "0dc9f109-33d9-4503-be90-7f74ed07d5bb",
+      "name": "Read Document Structure"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map((item, index) => {\n  const doc = item.json;\n  const expected = $('Validate Document Batch').itemMatching(index).json;\n  const runs = [];\n  function collect(blocks) {\n    for (const block of blocks || []) {\n      for (const el of block.paragraph?.elements || []) {\n        if (el.textRun?.content && Number.isInteger(el.startIndex)) runs.push({ start: el.startIndex, text: el.textRun.content });\n      }\n      for (const row of block.table?.tableRows || []) for (const cell of row.tableCells || []) collect(cell.content);\n    }\n  }\n  collect(doc.body?.content);\n  let text = ''; const positions = [];\n  for (const run of runs) for (let i = 0; i < run.text.length; i++) { text += run.text[i]; positions.push(run.start + i); }\n  function findRange(value) {\n    const start = text.indexOf(value);\n    if (start < 0 || text.indexOf(value, start + 1) >= 0) throw new Error('Template must contain the contact email and Open record label exactly once.');\n    const end = start + value.length - 1;\n    for (let i = start; i < end; i++) if (positions[i + 1] !== positions[i] + 1) throw new Error('Link text spans separate document elements.');\n    return { startIndex: positions[start], endIndex: positions[end] + 1 };\n  }\n  return { json: { documentId: doc.documentId, title: doc.title, email: expected.email,\n    emailRange: findRange(expected.email), recordRange: findRange('Open record') }, pairedItem: { item: index } };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3900,
+        700
+      ],
+      "id": "cc8b2e31-2fff-448b-ab39-55d7a206e4aa",
+      "name": "Locate Link Ranges"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.documentId }}:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDocsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=\n{{ JSON.stringify({\n  requests: [\n    {\n      updateTextStyle: {\n        range: $json.emailRange,\n        textStyle: {\n          link: {\n            url: \"mailto:\" + $json.email\n          }\n        },\n        fields: \"link\"\n      }\n    },\n    {\n      updateTextStyle: {\n        range: $json.recordRange,\n        textStyle: {\n          link: {\n            url: $('Validate Document Batch').item.json.url\n          }\n        },\n        fields: \"link\"\n      }\n    }\n  ]\n}) }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        4200,
+        700
+      ],
+      "id": "66d9a706-b9be-48f2-a6d9-4e5aad128c8a",
+      "name": "Apply Document Links"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.documentId }}",
+          "mode": "id"
+        },
+        "options": {
+          "binaryPropertyName": "data",
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf"
+            }
+          },
+          "fileName": "={{ $('Locate Link Ranges').item.json.title + '.pdf' }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        4500,
+        700
+      ],
+      "id": "9fcf5f94-e3b5-4253-8132-06fc694af158",
+      "name": "Export PDF"
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "binaryData": true,
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        4800,
+        700
+      ],
+      "id": "e280763c-445b-4ef4-bb94-bcc216e19ca9",
+      "name": "Deliver PDF"
+    },
+    {
+      "parameters": {
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Copy Selected Template').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        5100,
+        700
+      ],
+      "id": "bd8d4c43-2a97-42db-8f4b-7432f49421de",
+      "name": "Delete Temporary Copy"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "text": "Your document request is being validated and processed.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2700,
+        950
+      ],
+      "id": "310071ba-b869-4b83-b20e-fb35c9c4774e",
+      "name": "Processing Notice"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "text": "The request could not be processed. Check the two-line record format, allowed HTTPS host, unique record IDs, and final Email line. Choose a template first.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3000,
+        1000
+      ],
+      "id": "c0089f92-ba78-469a-b100-06cd51fd87af",
+      "name": "Invalid Input Notice"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ String($json.status ?? '').toLowerCase() }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    },
+                    "id": "6f582963-e91d-46d6-86eb-ffd4948c58c5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "New_User"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "201e4461-5865-4ca6-86c2-3dfef6e6c2e8",
+                    "leftValue": "={{ String($json.status ?? '').toLowerCase() }}",
+                    "rightValue": "pending",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Pending"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "0cdb8535-1de5-4760-9200-50fba267ed3e",
+                    "leftValue": "={{ String($json.status ?? '').toLowerCase() }}",
+                    "rightValue": "rejected",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Rejected"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "1f50901f-c314-472c-9b5a-b908a0b6aa64",
+                    "leftValue": "={{ String($json.status ?? '').toLowerCase() }}",
+                    "rightValue": "revoked",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Revoked"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.5,
+      "position": [
+        1800,
+        1250
+      ],
+      "id": "14aa0064-ea4d-4eae-8a9d-e705267aac62",
+      "name": "Route Access Status"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "text": "Your PDF documents were delivered and the temporary document copies were deleted.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        5700,
+        700
+      ],
+      "id": "55344655-3c98-44d4-a9e0-919d303493e2",
+      "name": "Completion Notice"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        5400,
+        700
+      ],
+      "id": "ff97e5b3-e3ce-46e1-bd05-340adc3a2af3",
+      "name": "One Completion Notice"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $('Project Configuration').first().json.config.accessTableId }}",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $('Normalize Request').first().json.user_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $('Normalize Request').first().json.user_id }}",
+            "status": "pending",
+            "username": "={{ $('Normalize Request').first().json.username }}",
+            "role": "user"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "role",
+              "displayName": "role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2100,
+        1200
+      ],
+      "id": "ef73deac-fd1e-4194-ae00-a81c8d7babfb",
+      "name": "Register Access Request"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Project Configuration').first().json.config.ownerUserId }}",
+        "text": "={{ 'New access request\\nUser ID: ' + $('Normalize Request').first().json.user_id + '\\nChoose approve or reject.' }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        },
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Approve",
+                    "additionalFields": {
+                      "callback_data": "={{ 'access_approve:' + $('Normalize Request').first().json.user_id }}"
+                    }
+                  },
+                  {
+                    "text": "Reject",
+                    "additionalFields": {
+                      "callback_data": "={{ 'access_reject:' + $('Normalize Request').first().json.user_id }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2400,
+        1200
+      ],
+      "id": "4947f64b-31bf-4ee1-960f-6d530bb41809",
+      "name": "Notify Owner of Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "c7d1da88-395f-4aaa-a952-8be5d6cc7366",
+              "leftValue": "={{ String($json.user_id ?? '').trim() }}",
+              "rightValue": "={{ $('Project Configuration').first().json.config.ownerUserId }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "3ebcf1ba-812c-4d2f-9e48-ebc9bd84041e",
+              "leftValue": "={{ String($json.action ?? '').trim().toLowerCase() }}",
+              "rightValue": "^(/admin|admin_(pending|users)|access_(approve|reject):[0-9]+)$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        900,
+        0
+      ],
+      "id": "cff6cefb-4241-4be3-997a-536f9b9c334f",
+      "name": "Check Owner Action"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ /^access_approve:[0-9]+$/.test(String($json.action ?? '').trim()) ? 'access_approve' : '' }}",
+                    "rightValue": "access_approve",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0ee4550d-982a-4be2-b5af-af3a8c6cd832"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Approve"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "d1895a80-9ac1-4ebf-8a96-37c8c30f9c1b",
+                    "leftValue": "={{ String($json.action ?? '').split(':')[0] }}",
+                    "rightValue": "access_reject",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Reject"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "65046e2c-6819-4634-9f8f-a3343636a099",
+                    "leftValue": "={{ String($json.action ?? '').trim().split(':')[0] }}",
+                    "rightValue": "/admin",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Admin_Menu"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "222ecd97-e0ab-41a9-9edc-748c79dcacfa",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "admin_pending",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Pending_List"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "e4312009-cb5a-454b-ba1b-6bb1ef57c144",
+                    "leftValue": "={{ String($json.action ?? '').trim().toLowerCase() }}",
+                    "rightValue": "admin_users",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Users_List"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.5,
+      "position": [
+        1200,
+        -1200
+      ],
+      "id": "b016effb-713d-493d-a236-15ea6c1edaee",
+      "name": "Route Owner Action"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "716896cd-1dfd-453d-af46-2e01379730f7",
+              "leftValue": "={{ $json.status ?? '' }}",
+              "rightValue": "pending",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "217c3e02-4c3b-4634-8efb-5ad532e5b985",
+              "leftValue": "={{ $json.role ?? '' }}",
+              "rightValue": "owner",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "c91df17d-0fd1-43bc-a783-5813b299ea3d",
+              "leftValue": "={{ String($json.user_id ?? '') }}",
+              "rightValue": "={{ $('Project Configuration').first().json.config.ownerUserId }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1800,
+        -1900
+      ],
+      "id": "84a75d04-9fc0-4eb5-b07d-58f6aa27edc2",
+      "name": "Check Approval Target"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $('Project Configuration').first().json.config.accessTableId }}",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $json.user_id }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "pending"
+            },
+            {
+              "keyName": "role",
+              "condition": "neq",
+              "keyValue": "owner"
+            },
+            {
+              "keyName": "user_id",
+              "condition": "neq",
+              "keyValue": "={{ $('Project Configuration').first().json.config.ownerUserId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "approved"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "role",
+              "displayName": "role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2100,
+        -1900
+      ],
+      "id": "6d2c0404-4fe4-430a-b483-379ad7fa49f0",
+      "name": "Approve Access"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ String($('Normalize Request').first().json.action).split(':')[1] }}",
+        "text": "Your access request was approved. Send /start to begin.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2400,
+        -2000
+      ],
+      "id": "e8e17106-1a0b-4f3e-a429-a193455aa986",
+      "name": "Notify Approved User"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $('Project Configuration').first().json.config.accessTableId }}",
+          "mode": "id"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ String($('Normalize Request').first().json.action).split(':')[1] }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1500,
+        -1900
+      ],
+      "id": "d040ffc8-1f15-4840-b4a6-cc73c245229b",
+      "name": "Find Approval Target"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $('Project Configuration').first().json.config.accessTableId }}",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ String($('Normalize Request').first().json.action).split(':')[1] }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1500,
+        -1450
+      ],
+      "id": "426d9c67-8482-45ed-a106-34f47edb0f98",
+      "name": "Find Rejection Target"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "d78e414b-c308-41eb-849d-a7027a327d70",
+              "leftValue": "={{ $json.status ?? '' }}",
+              "rightValue": "pending",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "e749c70a-1ce6-4eeb-9eeb-7fb7add180cc",
+              "leftValue": "={{ $json.role ?? '' }}",
+              "rightValue": "owner",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "c792cc56-c95b-4ed8-9d90-f3925c4ee3b3",
+              "leftValue": "={{ String($json.user_id ?? '') }}",
+              "rightValue": "={{ $('Project Configuration').first().json.config.ownerUserId }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1800,
+        -1450
+      ],
+      "id": "cf49b098-4863-4be6-aff6-404131c94288",
+      "name": "Check Rejection Target"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $('Project Configuration').first().json.config.accessTableId }}",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $json.user_id }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "pending"
+            },
+            {
+              "keyName": "role",
+              "condition": "neq",
+              "keyValue": "owner"
+            },
+            {
+              "keyName": "user_id",
+              "condition": "neq",
+              "keyValue": "={{ $('Project Configuration').first().json.config.ownerUserId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "rejected"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "role",
+              "displayName": "role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2100,
+        -1450
+      ],
+      "id": "35a754f0-8a16-4250-9c36-ff9d70ae8cf4",
+      "name": "Reject Access"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ String($('Normalize Request').first().json.action).split(':')[1] }}",
+        "text": "Your access request was rejected. Contact the workflow owner for assistance.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2400,
+        -1450
+      ],
+      "id": "c89b0c5b-2529-4f54-adb8-947b48562299",
+      "name": "Notify Rejected User"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "text": "Your access request has been submitted to the workflow owner.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2700,
+        1200
+      ],
+      "id": "e9daeee5-732a-4170-ad61-4eb06d371c48",
+      "name": "Request Received Notice"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "text": "Your access request is awaiting review.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2100,
+        1450
+      ],
+      "id": "fbec23e0-a4d3-4791-8efb-a2fc3b4e27e8",
+      "name": "Pending Access Notice"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "text": "Access is not approved. Contact the workflow owner.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2100,
+        1650
+      ],
+      "id": "f89bdcdc-0f85-48b0-ab4c-572e9266b5e5",
+      "name": "Rejected Access Notice"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "text": "Your access has been revoked. Contact the workflow owner.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2100,
+        1850
+      ],
+      "id": "1f1e539e-69c4-42c8-805f-a84515c6249f",
+      "name": "Revoked Access Notice"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "text": "Owner menu\nReview pending requests or list approved users. Access revocation and reactivation are managed in the access table.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        },
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Pending requests",
+                    "additionalFields": {
+                      "callback_data": "admin_pending"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Approved users",
+                    "additionalFields": {
+                      "callback_data": "admin_users"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Create documents",
+                    "additionalFields": {
+                      "callback_data": "start_menu"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1500,
+        -1100
+      ],
+      "id": "7e09b391-5c93-4cfa-b228-b39f0261e4f9",
+      "name": "Owner Menu"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $('Project Configuration').first().json.config.accessTableId }}",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1500,
+        -800
+      ],
+      "id": "0138fe45-6955-472f-8f2f-7f05d9fa465d",
+      "name": "List Pending Requests",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "9e5e2c4b-6331-4f36-a22c-bb3ed3d1ff5e",
+              "leftValue": "={{ $json.user_id ?? '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1800,
+        -800
+      ],
+      "id": "c418c881-8eb3-4796-abee-6945e40ecefc",
+      "name": "Has Pending Requests"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Project Configuration').first().json.config.ownerUserId }}",
+        "text": "={{ 'Pending access request\\nUser ID: ' + $json.user_id }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        },
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Approve",
+                    "additionalFields": {
+                      "callback_data": "={{ 'access_approve:' + $json.user_id }}"
+                    }
+                  },
+                  {
+                    "text": "Reject",
+                    "additionalFields": {
+                      "callback_data": "={{ 'access_reject:' + $json.user_id }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2100,
+        -900
+      ],
+      "id": "f252a089-60b2-47a5-8b2a-7a64b5550006",
+      "name": "Pending Request Card"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "text": "There are no pending access requests.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        },
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Owner menu",
+                    "additionalFields": {
+                      "callback_data": "/admin"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2100,
+        -650
+      ],
+      "id": "a747eb6f-2ed4-4238-9bfc-ce0966ba5843",
+      "name": "No Pending Requests"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $('Project Configuration').first().json.config.accessTableId }}",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "keyValue": "approved"
+            },
+            {
+              "keyName": "role",
+              "condition": "neq",
+              "keyValue": "owner"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1500,
+        -350
+      ],
+      "id": "76129732-d133-4c19-8211-c8dce1fbf35c",
+      "name": "List Approved Users",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "a2497138-7131-4849-b9a7-89f5962a926f",
+              "leftValue": "={{ String($json.user_id ?? '') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1800,
+        -350
+      ],
+      "id": "c969699c-0ca5-40d0-9a36-0c35195dec4a",
+      "name": "Has Approved Users"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "text": "={{ 'Approved user\\nUser ID: ' + $json.user_id + '\\nManage status in the access table.' }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        },
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Owner menu",
+                    "additionalFields": {
+                      "callback_data": "/admin"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2100,
+        -450
+      ],
+      "id": "934d5ddf-f2c0-4d89-b591-2754c2c46606",
+      "name": "Approved User Card"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Request').first().json.chat_id }}",
+        "text": "There are no approved users. The owner is excluded from this list.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        },
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Owner menu",
+                    "additionalFields": {
+                      "callback_data": "/admin"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2400,
+        -450
+      ],
+      "id": "aa793710-ee01-462b-8f7a-f606e0f280ff",
+      "name": "No Approved Users",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Project Configuration').first().json.config.ownerUserId }}",
+        "text": "={{ 'Access approved\\nUser ID: ' + $('Find Approval Target').first().json.user_id }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2400,
+        -1750
+      ],
+      "id": "cb8ab4c9-f952-48ac-9828-d0c13d310593",
+      "name": "Notify Owner of Approval"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Replace these placeholders only in your private n8n instance.\nconst config = {\n  ownerUserId: 'REPLACE_WITH_OWNER_USER_ID',\n  accessTableId: 'REPLACE_WITH_ACCESS_TABLE_ID',\n  sessionTableId: 'REPLACE_WITH_SESSION_TABLE_ID',\n  templateAId: 'REPLACE_WITH_TEMPLATE_A_DOCUMENT_ID',\n  templateBId: 'REPLACE_WITH_TEMPLATE_B_DOCUMENT_ID',\n  allowedLinkHosts: ['example.com'],\n};\nif (Object.values(config).some(value => typeof value === 'string' && value.startsWith('REPLACE_WITH_'))) {\n  throw new Error('Complete Project Configuration before enabling this workflow.');\n}\nif (!/^[1-9]\\d+$/.test(config.ownerUserId) || !config.allowedLinkHosts.length) {\n  throw new Error('Invalid owner ID or empty link host allowlist.');\n}\nreturn $input.all().map((item, index) => ({ json: { ...item.json, config }, pairedItem: { item: index } }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        0
+      ],
+      "id": "ea21b984-89c9-4edd-815d-7797a6ac88bd",
+      "name": "Project Configuration"
+    },
+    {
+      "parameters": {
+        "content": "## 01 · Intake and configuration\nSet private configuration values, then connect credentials.\nPrivate chats only. No live data is included in this template.",
+        "width": 1100,
+        "height": 240,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -350
+      ],
+      "id": "fcffaa1f-8eed-4e82-a0e9-bbd905c8aced",
+      "name": "Start Here"
+    },
+    {
+      "parameters": {
+        "content": "## 02 · Owner controls\nApprove / reject pending requests and list approved users.\nOwner actions require the configured sender ID. Revocation / reactivation: access table.",
+        "width": 1700,
+        "height": 240,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        -2300
+      ],
+      "id": "eee18164-bdfd-4944-91fe-109a60b780ca",
+      "name": "Owner Controls"
+    },
+    {
+      "parameters": {
+        "content": "## 03 · Document pipeline\nValidate batch → copy template → fill fields → add links → export PDF → deliver → delete copy.\nOnly synthetic examples are provided. Configure permitted link hosts.\nCleanup is on the successful path; failed runs need operational review.",
+        "width": 3200,
+        "height": 300,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2900,
+        250
+      ],
+      "id": "956564e7-92fb-4923-b590-a0318d997b24",
+      "name": "Document Automation"
+    },
+    {
+      "parameters": {
+        "content": "## 04 · Access lifecycle\nNew → pending → approved / rejected. Revoked users cannot create documents.\nKeep one access row per user and one session row per chat.",
+        "width": 1500,
+        "height": 240,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        2150
+      ],
+      "id": "4dee81b2-505d-4716-a3c9-6fbd9c797e6c",
+      "name": "Access Lifecycle"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receive Request": {
+      "main": [
+        [
+          {
+            "node": "Project Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Request": {
+      "main": [
+        [
+          {
+            "node": "Check Owner Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Access Record": {
+      "main": [
+        [
+          {
+            "node": "Check Approved Access",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route User Action": {
+      "main": [
+        [
+          {
+            "node": "Welcome",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Choose Template",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save Template A Session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save Template B Session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Find Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Welcome": {
+      "main": [
+        []
+      ]
+    },
+    "Check Approved Access": {
+      "main": [
+        [
+          {
+            "node": "Route User Action",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route Access Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Template B Session": {
+      "main": [
+        [
+          {
+            "node": "Request Document Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Template A Session": {
+      "main": [
+        [
+          {
+            "node": "Request Document Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Session": {
+      "main": [
+        [
+          {
+            "node": "Check Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Session": {
+      "main": [
+        [
+          {
+            "node": "Processing Notice",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Validate Document Batch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Input Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Document Batch": {
+      "main": [
+        [
+          {
+            "node": "Copy Selected Template",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Input Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy Selected Template": {
+      "main": [
+        [
+          {
+            "node": "Fill Document Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fill Document Fields": {
+      "main": [
+        [
+          {
+            "node": "Read Document Structure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Document Structure": {
+      "main": [
+        [
+          {
+            "node": "Locate Link Ranges",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Locate Link Ranges": {
+      "main": [
+        [
+          {
+            "node": "Apply Document Links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Document Links": {
+      "main": [
+        [
+          {
+            "node": "Export PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export PDF": {
+      "main": [
+        [
+          {
+            "node": "Deliver PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deliver PDF": {
+      "main": [
+        [
+          {
+            "node": "Delete Temporary Copy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invalid Input Notice": {
+      "main": [
+        []
+      ]
+    },
+    "Delete Temporary Copy": {
+      "main": [
+        [
+          {
+            "node": "One Completion Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completion Notice": {
+      "main": [
+        []
+      ]
+    },
+    "One Completion Notice": {
+      "main": [
+        [
+          {
+            "node": "Completion Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Access Status": {
+      "main": [
+        [
+          {
+            "node": "Register Access Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pending Access Notice",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rejected Access Notice",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Revoked Access Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register Access Request": {
+      "main": [
+        [
+          {
+            "node": "Notify Owner of Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Owner Action": {
+      "main": [
+        [
+          {
+            "node": "Route Owner Action",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Find Access Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Owner Action": {
+      "main": [
+        [
+          {
+            "node": "Find Approval Target",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Find Rejection Target",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Owner Menu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "List Pending Requests",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "List Approved Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Approval Target": {
+      "main": [
+        [
+          {
+            "node": "Approve Access",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approve Access": {
+      "main": [
+        [
+          {
+            "node": "Notify Approved User",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify Owner of Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Approval Target": {
+      "main": [
+        [
+          {
+            "node": "Check Approval Target",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Rejection Target": {
+      "main": [
+        [
+          {
+            "node": "Check Rejection Target",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Rejection Target": {
+      "main": [
+        [
+          {
+            "node": "Reject Access",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reject Access": {
+      "main": [
+        [
+          {
+            "node": "Notify Rejected User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Owner of Request": {
+      "main": [
+        [
+          {
+            "node": "Request Received Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Pending Requests": {
+      "main": [
+        [
+          {
+            "node": "Has Pending Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Pending Requests": {
+      "main": [
+        [
+          {
+            "node": "Pending Request Card",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Pending Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Approved Users": {
+      "main": [
+        [
+          {
+            "node": "Has Approved Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Approved Users": {
+      "main": [
+        [
+          {
+            "node": "Approved User Card",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Approved Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Project Configuration": {
+      "main": [
+        [
+          {
+            "node": "Normalize Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false
+  },
+  "tags": []
+}
